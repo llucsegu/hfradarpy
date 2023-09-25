@@ -43,45 +43,53 @@ def qc_radial_file(radial_file, qc_values=None, export=None, save_path=None, cle
     Returns:
         Radial object: A quality controlled radial file.
     """
-    qc_values = qc_values or dict(
+    qc_values = qc_values or dict( 
+    # Es crea un diccionari qc_values amb una sèrie de configuracions per a diferents proves de control de qualitat (QC). Cada clau en el diccionari representa el nom d'una prova de QC i el seu valor és un altre diccionari que conté configuracions específiques per a aquesta prova.
         qc_qartod_avg_radial_bearing=dict(reference_bearing=151, warning_threshold=15, failure_threshold=30),
+        # Configuracions relacionades amb la prova de control de qualitat per a la mitjana del rumb radial. Inclou un reference_bearing (rumb de referència), un warning_threshold (llindar d'avís) i un failure_threshold (llindar de fallada).
         qc_qartod_radial_count=dict(min_count=75.0, low_count=225.0),
+        # Configuracions relacionades amb la prova de control de qualitat del recompte radial. Inclou un min_count (recompte mínim) i un low_count (recompte baix).
         qc_qartod_maximum_velocity=dict(max_speed=300.0, high_speed=100.0),
+        # SÍ: Configuracions relacionades amb la prova de control de qualitat de la velocitat màxima. Inclou un max_speed (velocitat màxima) i un high_speed (velocitat alta).
         qc_qartod_spatial_median=dict(
             radial_smed_range_cell_limit=2.1, radial_smed_angular_limit=10, radial_smed_current_difference=30
         ),
+        # Configuracions relacionades amb la prova de control de qualitat de la mediana espacial. Inclou límits per a la cel·la de rang radial, límits angulars i diferències de corrent radial.
         qc_qartod_temporal_gradient=dict(gradient_temp_fail=32, gradient_temp_warn=25),
+        # SÍ: Configuracions relacionades amb la prova de control de qualitat del gradient temporal. Inclou llindars per a fallada i advertència del gradient temporal.
         qc_qartod_primary_flag=dict(
             include=[
-                "qc_qartod_syntax",
-                "qc_qartod_valid_location",
-                "qc_qartod_radial_count",
-                "qc_qartod_maximum_velocity",
-                "qc_qartod_spatial_median",
+                "qc_qartod_syntax", #SÍ
+                "qc_qartod_valid_location", #SÍ
+                "qc_qartod_radial_count", #SÍ
+                "qc_qartod_maximum_velocity",#SÍ
+                "qc_qartod_spatial_median", #SÍ
             ]
         ),
+        # Una llista de proves de QC que es consideraran com a proves primàries. Això s'utilitza per determinar quines proves s'executen finalment a les dades.
     )
-
-    if not isinstance(radial_file, Radial):
-        r = Radial(radial_file)
+    
+# Aquesta part del codi s'encarrega de processar un arxiu radial i d'aplicar diverses proves de control de qualitat (QC) a les dades contingudes en aquest arxiu.
+    if not isinstance(radial_file, Radial): #verificació si radial_file és un objecte del tipus correcte (Radial) abans de processar-lo.
+        r = Radial(radial_file) #si no és radial es crea una nova instància de 'Radial' anomenada 'r' utilitzant el valor de radial_file independentment del tipus de 'radial_file' proporcionat
     else:
-        r = radial_file
+        r = radial_file #si ja és un Radial tot OK, es defineix com a r i es segueix
 
-    if r.is_valid():
-        if clean:
-            rclean = copy.deepcopy(r)
-        t0 = r.time - dt.timedelta(hours=1)
-        previous_radial = "{}_{}{}".format(
+    if r.is_valid(): #comprovació per assegurar-se que l'arxiu radial carregat tingui dades vàlides abans de realitzar proves de QC en elles.
+        if clean: #si la variable clean és True (que no és False, None, 0, 0.0, ""(string buida), []=(llista buida), {}(diccionari buit), ni ()(tupla buida))
+            rclean = copy.deepcopy(r) # es crea una còpia profunda (deepcopy) de la instància r de Radial anomenada rclean. Aquesta còpia s'utilitzarà més endavant per aplicar una neteja addicional a les dades si és necessari.
+        t0 = r.time - dt.timedelta(hours=1) # Es calcula l'hora prèvia (t0) restant una hora a la propietat time 
+        previous_radial = "{}_{}{}".format( #calcul del nom de l'arxiu radial anterior (el nom actual però amb l'hora t0)
             "_".join(r.file_name.split("_")[:2]), t0.strftime("%Y_%m_%d_%H%M"), os.path.splitext(r.file_name)[1]
         )
-        previous_full_file = os.path.join(os.path.dirname(r.full_file), previous_radial)
-        qc_keys = qc_values.keys()
+        previous_full_file = os.path.join(os.path.dirname(r.full_file), previous_radial) #Es crea la ubicació completa de l'arxiu radial anterior concatenant la carpeta actual de l'arxiu (os.path.dirname(r.full_file)) amb el nom de l'arxiu radial anterior (previous_radial).
+        qc_keys = qc_values.keys() #Es crea una llista de claus del diccionari qc_values i es guarda en la variable qc_keys. Aquesta llista es utilitzarà posteriorment per comprovar quines proves de QC s'han de aplicar als dades.
 
         # run high frequency radar qartod tests on open radial file
-        r.initialize_qc()
-        r.qc_qartod_syntax()
+        r.initialize_qc() #inicialització de les proves de QC
+        r.qc_qartod_syntax() #s'executa la funció aquesta
 
-        if "qc_qartod_maximum_velocity" in qc_keys:
+        if "qc_qartod_maximum_velocity" in qc_keys: #si aquesta funció està dins la llista de claus qc_keys, llavors s'executa la prova de control
             r.qc_qartod_maximum_velocity(**qc_values["qc_qartod_maximum_velocity"])
 
         r.qc_qartod_valid_location()
@@ -113,7 +121,7 @@ def qc_radial_file(radial_file, qc_values=None, export=None, save_path=None, cle
         if "qc_qartod_primary_flag" in qc_keys:
             r.qc_qartod_primary_flag(**qc_values["qc_qartod_primary_flag"])
 
-        if clean:
+        if clean: #si la variable clean és certa (True), es realitza una neteja addicional dels dades. Es crea una còpia de les dades de rclean i s'eliminen els registres que no compleixen certs criteris de qualitat,
             d = rclean.data
             dqc = r.data
             if "PRIM" in r.data:
