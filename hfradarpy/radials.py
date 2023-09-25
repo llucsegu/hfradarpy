@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 def qc_radial_file(radial_file, qc_values=None, export=None, save_path=None, clean=False, clean_path=None):
     """
-    Main function to parse and qc radial files.
+    Main function to parse and qc radial files. #aquesta és la funció principal per analitzar i fer controls de qualitat a les dades ruv
 
     Setting clean to True will create two separate quality controlled radial files. Must set clean_path.
     The first radial file with containing flag metadata will be saved to save_path. This file contains data along with flags.
